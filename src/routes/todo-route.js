@@ -10,10 +10,15 @@ router.get('/register', todoController.getRegisterPage);
 router.post('/register', todoController.submitRegistration)
 
 
-// List
-router.get('/list/:id', todoController.getTodoList);
-router.post('/list/:id', todoController.createList);
+// Get and Create List
+router.get('/list/:username', todoController.getTodoList);
+router.post('/list/:username', todoController.createList);
 
+// Delete List Item
+router.get('/list/:username/delete/:listid', todoController.deleteListItem);
+
+// Logout
+router.get('/logout', todoController.logout);
 
 
 

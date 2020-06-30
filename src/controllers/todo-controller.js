@@ -18,24 +18,31 @@ exports.getTodoList = (req, res) => {
 
         });
     }
-    let getAllLists = 'SELECT * FROM `list`';
-    con.query(getAllLists, (err, allLists) => {
 
-        let lists = [];
-        allLists.forEach(list => {
-            lists.push({
-                id: list.id,
-                listName: list.listName,
-                owner: list.owner,
-                userId: list.userId
+    let loggedInUser = `SELECT id FROM users WHERE username = '${req.params.username}'`;
+    con.query(loggedInUser, (err, currentUser) => {
+        let currentId= currentUser[0].id;
+
+        let getAllLists = 'SELECT * FROM `list`';
+        con.query(getAllLists, (err, allLists) => {
+
+            let lists = [];
+            allLists.forEach(list => {
+                lists.push({
+                    id: list.id,
+                    listName: list.listName,
+                    owner: list.owner,
+                    userId: list.userId,
+                    isOwner: list.userId === currentId ? true : false,
+                    username: req.params.username
+                });
+            });
+            res.render('list', {
+                lists: lists,
+                username: req.params.username
             });
         });
-
-        res.render('list', {
-            id: req.params.id,
-            lists: lists
-        });
-    })
+    });
    
    
 }
@@ -49,15 +56,23 @@ exports.createList = (req, res) => {
             
         });
     }
-    let getUser = 'SELECT * FROM `users` WHERE id = ' + req.params.id;
+    let getUser = `SELECT * FROM users WHERE username = '${req.params.username}'`;
     con.query(getUser, (err, user) => {
         let createList = `INSERT INTO list (listname, owner, userId) VALUES ('${listName}', '${user[0].name}', ${user[0].id})`;
         
         con.query(createList, (err, result) => {
-            res.redirect(`/list/${user[0].id}`);
+            res.redirect(`/list/${req.params.username}`);
         });
     });
     
+}
+
+// ################## Delete List Item ###############//
+exports.deleteListItem = (req, res) => {
+    let deleteItem = `DELETE FROM list WHERE id = ${req.params.listid}`;
+    con.query(deleteItem, (err, result) => {
+        res.redirect(`/list/${req.params.username}`);
+    });
 }
 
 //##################### Login Requests ############## //
@@ -93,7 +108,7 @@ exports.submitLogin = (req, res) => {
                 const isCorrectPass = passwordHash.verify(pass, hashedPass);
                 if(isCorrectPass){
                   
-                    res.redirect(`/list/${userPass[0].id}`);
+                    res.redirect(`/list/${userPass[0].username}`);
                 }
                 else{
                     res.render('login', {
@@ -129,7 +144,7 @@ exports.submitRegistration = (req, res) => {
     con.query(getUser, (err, similar) =>{
         if(similar.length != 0){
             res.render('register', {
-                error: true,
+                hasError: true,
                 errorMsg: 'Username already taken'
             });
         }
@@ -145,11 +160,17 @@ exports.submitRegistration = (req, res) => {
             }
             else{
                 res.render('register', {
-                    error: true,
+                    hasError: true,
                     errorMsg: 'Password did not match'
                 });
             }
         }
     });
     
+}
+
+
+// ############### Logout ##################### //
+exports.logout = (req, res) => {
+    res.redirect('/login')
 }
